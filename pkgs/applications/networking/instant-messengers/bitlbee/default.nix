@@ -1,4 +1,4 @@
-{ fetchurl, stdenv, gnutls, glib, pkgconfig, check, libotr }:
+{ fetchurl, stdenv, gnutls, glib, pkgconfig, check, libotr, lib, libpurple ? null }:
 
 with stdenv.lib;
 stdenv.mkDerivation rec {
@@ -10,13 +10,14 @@ stdenv.mkDerivation rec {
   };
 
   buildInputs = [ gnutls glib pkgconfig libotr ]
-    ++ optional doCheck check;
+    ++ optional doCheck check
+    ++ (lib.optional (libpurple != null) libpurple);
 
   configureFlaags = [
     "--gcov=1"
     "--otr=1"
     "--ssl=gnutls"
-  ];
+  ] ++ (lib.optional (libpurple != null) "--purple=1");
 
   doCheck = true;
 

@@ -8425,7 +8425,9 @@ let
     (callPackage ../applications/misc/bitcoin/dogecoin.nix {})
   );
 
-  bitlbee = callPackage ../applications/networking/instant-messengers/bitlbee { };
+  bitlbee = callPackage ../applications/networking/instant-messengers/bitlbee {
+    libpurple = if config.bitlbee.libpurple or true then pidgin else null;
+  };
 
   blender = callPackage  ../applications/misc/blender {
     python = python34;
