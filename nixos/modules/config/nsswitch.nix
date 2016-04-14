@@ -9,10 +9,23 @@ let
   inherit (config.services.avahi) nssmdns;
   inherit (config.services.samba) nsswins;
   ldap = (config.users.ldap.enable && config.users.ldap.nsswitch);
+  sssd = config.services.sssd.enable;
 
 in
 
-{
+  passwdArray = [ "files" ]
+    ++ optional sssd "sss"
+    ++ optionals ldap [ "ldap" ]
+    ++ [ "mymachines" ];
+
+  shadowArray = [ "files" ]
+    ++ optional sssd "sss"
+    ++ optionals ldap [ "ldap" ];
+
+  servicesArray = [ "files" ]
+    ++ optional sssd "sss";
+
+in {
   options = {
 
     # NSS modules.  Hacky!
@@ -39,17 +52,19 @@ in
     # Name Service Switch configuration file.  Required by the C
     # library.  !!! Factor out the mdns stuff.  The avahi module
     # should define an option used by this module.
-    environment.etc."nsswitch.conf".text =
-      ''
-        passwd:    files ${optionalString ldap "ldap"}
-        group:     files ${optionalString ldap "ldap"}
-        shadow:    files ${optionalString ldap "ldap"}
-        hosts:     files ${optionalString nssmdns "mdns_minimal [NOTFOUND=return]"} dns ${optionalString nssmdns "mdns"} ${optionalString nsswins "wins"} myhostname mymachines
-        networks:  files dns
-        ethers:    files
-        services:  files
-        protocols: files
-      '';
+    environment.etc."nsswitch.conf".text = ''
+      passwd:    ${concatStringsSep " " passwdArray}
+      group:     ${concatStringsSep " " passwdArray}
+      shadow:    ${concatStringsSep " " shadowArray}
+
+      hosts:     ${concatStringsSep " " hostArray}
+      networks:  files
+
+      ethers:    files
+      services:  ${concatStringsSep " " servicesArray}
+      protocols: files
+      rpc:       files
+    '';
 
     # Systemd provides nss-myhostname to ensure that our hostname
     # always resolves to a valid IP address.  It returns all locally
