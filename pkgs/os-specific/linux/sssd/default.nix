@@ -28,7 +28,7 @@ in stdenv.mkDerivation {
     export SGML_CATALOG_FILES="${pkgs.docbook_xml_xslt}/share/xml/docbook-xsl/catalog.xml:${pkgs.docbook_xml_dtd_44}/xml/dtd/docbook/catalog.xml"
     export PYTHONPATH=${ldap}/lib/python2.7/site-packages
     export PATH=$PATH:${pkgs.openldap}/libexec
-    export CPATH=${pkgs.libxml2}/include/libxml2
+    export CPATH=${pkgs.libxml2.dev}/include/libxml2
 
     configureFlags="--prefix=$out --sysconfdir=/etc --localstatedir=/var --enable-pammoddir=$out/lib/security --with-os=fedora --with-pid-path=/run --with-python2-bindings --with-python3-bindings --with-syslog=journald --without-selinux --without-semanage --with-xml-catalog-path=''${SGML_CATALOG_FILES%%:*} --with-ldb-lib-dir=$out/modules/ldb"
   '';
