@@ -48,6 +48,11 @@ stdenv.mkDerivation ({
          "/bin:/usr/bin", which is inappropriate on NixOS machines. This
          patch extends the search path by "/run/current-system/sw/bin". */
       ./fix_path_attribute_in_getconf.patch
+
+      /* Make nssswitch look in /run/nss-modules first.
+         This is required for SSSD support and potentially other
+         modules not supplied by glibc itself. */
+      ./glibc-2.24-nixpath.patch
     ];
 
   postPatch =
