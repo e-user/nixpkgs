@@ -1,15 +1,16 @@
 diff -ur glibc-2.24-orig/nss/nsswitch.c glibc-2.24/nss/nsswitch.c
 --- glibc-2.24-orig/nss/nsswitch.c	2016-12-07 13:21:53.630202041 +0100
-+++ glibc-2.24/nss/nsswitch.c	2016-12-07 13:34:12.591288762 +0100
-@@ -34,6 +34,7 @@
++++ glibc-2.24/nss/nsswitch.c	2016-12-08 20:11:56.919383509 +0100
+@@ -34,6 +34,8 @@
  #include <shadow.h>
  
  #if !defined DO_STATIC_NSS || defined SHARED
-+# include <unistd.h>   /* for __libc_enable_secure */
++# include <unistd.h> /* for getuid */
++# include <sys/auxv.h> /* for getauxval */
  # include <gnu/lib-names.h>
  #endif
  
-@@ -320,6 +321,25 @@
+@@ -320,6 +322,25 @@
  				*(const char *const *) p2);
  }
  
@@ -35,7 +36,7 @@ diff -ur glibc-2.24-orig/nss/nsswitch.c glibc-2.24/nss/nsswitch.c
  
  #if !defined DO_STATIC_NSS || defined SHARED
  /* Load library.  */
-@@ -347,7 +367,11 @@
+@@ -347,7 +368,11 @@
  		      + strlen (__nss_shlib_revision) + 1);
        int saved_errno = errno;
        char shlib_name[shlen];
@@ -48,12 +49,12 @@ diff -ur glibc-2.24-orig/nss/nsswitch.c glibc-2.24/nss/nsswitch.c
        /* Construct shared object name.  */
        __stpcpy (__stpcpy (__stpcpy (__stpcpy (shlib_name,
  					      "libnss_"),
-@@ -355,7 +379,17 @@
+@@ -355,7 +380,17 @@
  			  ".so"),
  		__nss_shlib_revision);
  
 -      ni->library->lib_handle = __libc_dlopen (shlib_name);
-+      if (__builtin_expect (! __libc_enable_secure, 1))
++      if (! getauxval (AT_SECURE))
 +        {
 +          i = snprintf (buf, sizeof (buf), "per-user/%d/", getuid ());
 +          if (i < size)
