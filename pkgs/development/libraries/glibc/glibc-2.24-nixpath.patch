@@ -1,5 +1,6 @@
---- glibc-2.24/nss/nsswitch.c.nixpath	2016-12-02 23:11:20.528355442 +0100
-+++ glibc-2.24/nss/nsswitch.c	2016-12-03 00:00:05.237349358 +0100
+diff -ur glibc-2.24-orig/nss/nsswitch.c glibc-2.24/nss/nsswitch.c
+--- glibc-2.24-orig/nss/nsswitch.c	2016-12-07 13:21:53.630202041 +0100
++++ glibc-2.24/nss/nsswitch.c	2016-12-07 13:34:12.591288762 +0100
 @@ -34,6 +34,7 @@
  #include <shadow.h>
  
@@ -8,42 +9,59 @@
  # include <gnu/lib-names.h>
  #endif
  
-@@ -320,6 +321,16 @@
+@@ -320,6 +321,25 @@
  				*(const char *const *) p2);
  }
  
-+static const char *const nss_prefixes[] = { "/run/nss-modules-1/", "/run/nss-modules-2/" };
++#ifndef UNIQUE_ID
++# error UNIQUE_ID is undefined
++#endif
++
++static const char *nss_root = "/run/nss-modules/" UNIQUE_ID "/";
 +
 +void *
-+nss_load_library_prefix (const char* prefix, char *name)
++nss_load_library_prefix (const char* prefix, const char *name)
 +{
-+  size_t shlen = (strlen (prefix) + strlen (name) + 1);
++  size_t shlen = (strlen (nss_root) + strlen (prefix) + strlen (name) + 1);
 +  char shlib_name[shlen];
-+  __stpcpy (__stpcpy (shlib_name, prefix), name);
++
++  __stpcpy (__stpcpy (__stpcpy (shlib_name,
++                                nss_root),
++                      prefix),
++            name);
++  
 +  return __libc_dlopen (shlib_name);
 +}
  
  #if !defined DO_STATIC_NSS || defined SHARED
  /* Load library.  */
-@@ -347,6 +358,8 @@
+@@ -347,7 +367,11 @@
  		      + strlen (__nss_shlib_revision) + 1);
        int saved_errno = errno;
        char shlib_name[shlen];
-+      int i;
+-
 +      void *lib_handle = NULL;
- 
++      size_t size = 9 + 10 + 1 + 1; /* "per-user/" + (max uid digits) + "/" + EOF */
++      char buf[size]; 
++      int i;
++      
        /* Construct shared object name.  */
        __stpcpy (__stpcpy (__stpcpy (__stpcpy (shlib_name,
-@@ -355,7 +368,13 @@
+ 					      "libnss_"),
+@@ -355,7 +379,17 @@
  			  ".so"),
  		__nss_shlib_revision);
  
 -      ni->library->lib_handle = __libc_dlopen (shlib_name);
 +      if (__builtin_expect (! __libc_enable_secure, 1))
 +        {
-+          for (i = 0; lib_handle == NULL && i < sizeof (nss_prefixes); i++)
-+            lib_handle = nss_load_library_prefix (nss_prefixes[i], shlib_name);
++          i = snprintf (buf, sizeof (buf), "per-user/%d/", getuid ());
++          if (i < size)
++            lib_handle = nss_load_library_prefix ((const char *) buf, (const char *) shlib_name);
 +        }
++
++      if (lib_handle == NULL)
++        lib_handle = nss_load_library_prefix ("system/", (const char *) shlib_name);
 +
 +      ni->library->lib_handle = lib_handle ?: __libc_dlopen (shlib_name);
        if (ni->library->lib_handle == NULL)
