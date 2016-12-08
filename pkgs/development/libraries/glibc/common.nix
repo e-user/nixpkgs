@@ -49,11 +49,10 @@ stdenv.mkDerivation ({
          patch extends the search path by "/run/current-system/sw/bin". */
       ./fix_path_attribute_in_getconf.patch
 
-      /* Make nssswitch look in /run/nss-modules first.
+      /* Make nsswitch look in /run/nss-modules first.
          This is required for SSSD support and potentially other
          modules not supplied by glibc itself. */
-      ./glibc-2.24-nixpath.patch
-    ];
+    ] ++ lib.optional stdenv.isLinux ./glibc-2.24-nixpath.patch;
 
   postPatch =
     # Needed for glibc to build with the gnumake 3.82
@@ -163,6 +162,10 @@ stdenv.mkDerivation ({
 
     ${lib.optionalString (stdenv.cc.libc != null)
       ''makeFlags="$makeFlags BUILD_LDFLAGS=-Wl,-rpath,${stdenv.cc.libc}/lib"''
+    }
+
+    ${lib.optionalString stdenv.isLinux
+      ''export CPPFLAGS="$CPPFLAGS -DUNIQUE_ID=\\\"$(basename $out)\\\""''
     }
 
     ${preConfigure}
