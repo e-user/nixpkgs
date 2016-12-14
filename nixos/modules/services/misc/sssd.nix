@@ -27,5 +27,7 @@ in {
       };
     };
 
+    system.nss.modules = optional cfg.enable pkgs.sssd;
+
   };
 }

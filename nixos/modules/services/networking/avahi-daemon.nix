@@ -175,7 +175,7 @@ in
         gid = config.ids.gids.avahi;
       };
 
-    system.nssModules = optional cfg.nssmdns pkgs.nssmdns;
+    system.nss.modules = optional cfg.nssmdns pkgs.nssmdns;
 
     environment.systemPackages = [ pkgs.avahi ];
 
@@ -199,7 +199,7 @@ in
           ''
             # Make NSS modules visible so that `avahi_nss_support ()' can
             # return a sensible value.
-            export LD_LIBRARY_PATH="${config.system.nssModules.path}"
+            export LD_LIBRARY_PATH="${config.system.nss.modules.path}"
 
             exec ${pkgs.avahi}/sbin/avahi-daemon --syslog -f "${avahiDaemonConf}"
           '';
