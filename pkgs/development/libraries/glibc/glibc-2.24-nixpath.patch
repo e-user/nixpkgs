@@ -1,16 +1,7 @@
 diff -ur glibc-2.24-orig/nss/nsswitch.c glibc-2.24/nss/nsswitch.c
 --- glibc-2.24-orig/nss/nsswitch.c	2016-12-07 13:21:53.630202041 +0100
-+++ glibc-2.24/nss/nsswitch.c	2016-12-08 20:11:56.919383509 +0100
-@@ -34,6 +34,8 @@
- #include <shadow.h>
- 
- #if !defined DO_STATIC_NSS || defined SHARED
-+# include <unistd.h> /* for getuid */
-+# include <sys/auxv.h> /* for getauxval */
- # include <gnu/lib-names.h>
- #endif
- 
-@@ -320,6 +322,25 @@
++++ glibc-2.24/nss/nsswitch.c	2016-12-14 16:01:19.595104801 +0100
+@@ -320,6 +320,24 @@
  				*(const char *const *) p2);
  }
  
@@ -21,14 +12,13 @@ diff -ur glibc-2.24-orig/nss/nsswitch.c glibc-2.24/nss/nsswitch.c
 +static const char *nss_root = "/run/nss-modules/" UNIQUE_ID "/";
 +
 +void *
-+nss_load_library_prefix (const char* prefix, const char *name)
++nss_load_library_prefix (const char *name)
 +{
-+  size_t shlen = (strlen (nss_root) + strlen (prefix) + strlen (name) + 1);
++  size_t shlen = (strlen (nss_root) + strlen (name) + 1);
 +  char shlib_name[shlen];
 +
-+  __stpcpy (__stpcpy (__stpcpy (shlib_name,
-+                                nss_root),
-+                      prefix),
++  __stpcpy (__stpcpy (shlib_name,
++                      nss_root),
 +            name);
 +  
 +  return __libc_dlopen (shlib_name);
@@ -36,33 +26,23 @@ diff -ur glibc-2.24-orig/nss/nsswitch.c glibc-2.24/nss/nsswitch.c
  
  #if !defined DO_STATIC_NSS || defined SHARED
  /* Load library.  */
-@@ -347,7 +368,11 @@
+@@ -347,7 +365,8 @@
  		      + strlen (__nss_shlib_revision) + 1);
        int saved_errno = errno;
        char shlib_name[shlen];
 -
 +      void *lib_handle = NULL;
-+      size_t size = 9 + 10 + 1 + 1; /* "per-user/" + (max uid digits) + "/" + EOF */
-+      char buf[size]; 
-+      int i;
 +      
        /* Construct shared object name.  */
        __stpcpy (__stpcpy (__stpcpy (__stpcpy (shlib_name,
  					      "libnss_"),
-@@ -355,7 +380,17 @@
+@@ -355,7 +374,10 @@
  			  ".so"),
  		__nss_shlib_revision);
  
 -      ni->library->lib_handle = __libc_dlopen (shlib_name);
-+      if (! getauxval (AT_SECURE))
-+        {
-+          i = snprintf (buf, sizeof (buf), "per-user/%d/", getuid ());
-+          if (i < size)
-+            lib_handle = nss_load_library_prefix ((const char *) buf, (const char *) shlib_name);
-+        }
-+
 +      if (lib_handle == NULL)
-+        lib_handle = nss_load_library_prefix ("system/", (const char *) shlib_name);
++        lib_handle = nss_load_library_prefix ((const char *) shlib_name);
 +
 +      ni->library->lib_handle = lib_handle ?: __libc_dlopen (shlib_name);
        if (ni->library->lib_handle == NULL)
