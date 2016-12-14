@@ -211,7 +211,7 @@ in
       '';
     };
 
-    system.nssModules = singleton (
+    system.nss.modules = singleton (
       if cfg.daemon.enable then nss_pam_ldapd else nss_ldap
     );
 

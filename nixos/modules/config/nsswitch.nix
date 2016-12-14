@@ -10,29 +10,47 @@ let
   inherit (config.services.samba) nsswins;
   ldap = (config.users.ldap.enable && config.users.ldap.nsswitch);
   sssd = config.services.sssd.enable;
-
+  cfg = config.system.nss;
+  
 in
 
 {
   options = {
 
     # NSS modules.  Hacky!
-    system.nssModules = mkOption {
-      type = types.listOf types.path;
-      internal = true;
-      default = [];
-      description = ''
-        Search path for NSS (Name Service Switch) modules.  This allows
-        several DNS resolution methods to be specified via
-        <filename>/etc/nsswitch.conf</filename>.
-      '';
-      apply = list:
-        {
-          inherit list;
-          path = makeLibraryPath list;
-        };
-    };
+    system.nss = {
 
+      modules = mkOption {
+        type = types.listOf types.package;
+        internal = true;
+        default = [];
+      };
+
+      paths = mkOption {
+        type = types.listOf types.path;
+        internal = true;
+        default = cfg.modules;
+        description = ''
+          Search path for NSS (Name Service Switch) modules.  This allows
+          several DNS resolution methods to be specified via
+          <filename>/etc/nsswitch.conf</filename>.
+        '';
+        apply = list:
+          {
+            inherit list;
+            path = makeLibraryPath list;
+          };
+      };
+    
+      package = mkOption {
+        type = types.package;
+        internal = true;
+        description = ''
+          NSS module package.
+        '';
+      };
+
+    };
   };
 
   config = {
@@ -53,12 +71,28 @@ in
         automount: files ${optionalString ldap "ldap"} ${optionalString sssd "sss"}
       '';
 
-    # Systemd provides nss-myhostname to ensure that our hostname
-    # always resolves to a valid IP address.  It returns all locally
-    # configured IP addresses, or ::1 and 127.0.0.2 as
-    # fallbacks. Systemd also provides nss-mymachines to return IP
-    # addresses of local containers.
-    system.nssModules = [ config.systemd.package ];
+    system.nss = {
 
+      # Systemd provides nss-myhostname to ensure that our hostname
+      # always resolves to a valid IP address.  It returns all locally
+      # configured IP addresses, or ::1 and 127.0.0.2 as
+      # fallbacks. Systemd also provides nss-mymachines to return IP
+      # addresses of local containers.
+      modules = [ config.systemd.package ];
+
+      package = pkgs.buildEnv {
+        name = "nss-modules";
+        paths = config.system.nss.modules;
+        pathsToLink = ["/lib"];
+      };
+
+    };
+
+    system.activationScripts.setup-nss-modules =
+      ''
+        mkdir -p /run/nss-modules
+        ln -sfn ${package}/lib /run/nss-modules/${baseNameOf pkgs.glibc}
+      '';
   };
+
 }
