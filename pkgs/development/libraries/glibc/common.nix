@@ -12,7 +12,6 @@ cross:
 let
   version = "2.24";
   sha256 = "1ghzp41ryvsqxn4rhrm8r25wc33m2jf8zrcc1pj3jxyk8ad9a0by";
-  nssModulePath = out: "/run/nss-modules/${baseNameOf out}/";
 in
 
 assert cross != null -> gccCross != null;
@@ -173,13 +172,6 @@ let self = stdenv.mkDerivation ({
   '';
 
   preBuild = lib.optionalString withGd "unset NIX_DONT_SET_RPATH";
-
-  passthru = {
-    nssModulePath = {
-      system = "${nssModulePath self.out}system/";
-      user = uid: "${nssModulePath self.out}per-user/${toString uid}/";
-    };
-  };
 
   meta = {
     homepage = http://www.gnu.org/software/libc/;
