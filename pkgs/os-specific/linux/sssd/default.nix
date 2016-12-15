@@ -18,19 +18,26 @@ in stdenv.mkDerivation {
   };
 
   preConfigure = ''
-    cd "$NIX_BUILD_TOP/$name-$version"
-    for f in "''${source[@]}"; do
-      if [[ $f == *.patch ]]; then
-        patch -p1 < "$NIX_BUILD_TOP/$name-$version/$f"
-      fi
-    done
-
     export SGML_CATALOG_FILES="${pkgs.docbook_xml_xslt}/share/xml/docbook-xsl/catalog.xml:${pkgs.docbook_xml_dtd_44}/xml/dtd/docbook/catalog.xml"
     export PYTHONPATH=${ldap}/lib/python2.7/site-packages
     export PATH=$PATH:${pkgs.openldap}/libexec
     export CPATH=${pkgs.libxml2.dev}/include/libxml2
 
-    configureFlags="--prefix=$out --sysconfdir=/etc --localstatedir=/var --enable-pammoddir=$out/lib/security --with-os=fedora --with-pid-path=/run --with-python2-bindings --with-python3-bindings --with-syslog=journald --without-selinux --without-semanage --with-xml-catalog-path=''${SGML_CATALOG_FILES%%:*} --with-ldb-lib-dir=$out/modules/ldb"
+    configureFlagsArray=(
+      --prefix=$out
+      --sysconfdir=/etc
+      --localstatedir=/var
+      --enable-pammoddir=$out/lib/security
+      --with-os=fedora
+      --with-pid-path=/run
+      --with-python2-bindings
+      --with-python3-bindings
+      --with-syslog=journald
+      --without-selinux
+      --without-semanage
+      --with-xml-catalog-path=''${SGML_CATALOG_FILES%%:*}
+      --with-ldb-lib-dir=$out/modules/ldb
+    )
   '';
 
   enableParallelBuilding = true;
@@ -42,13 +49,11 @@ in stdenv.mkDerivation {
                   nss_wrapper ncurses Po4a ];
 
   buildPhase = ''
-    cd "$NIX_BUILD_TOP/$name-$version"
     substituteInPlace config.h --replace "<HAVE_KRB5_SET_TRACE_CALLBACK>" ""
     make SGML_CATALOG_FILES="$SGML_CATALOG_FILES"
   '';
 
   installPhase = ''
-    cd "$NIX_BUILD_TOP/$name-$version"
     make SGML_CATALOG_FILES="$SGML_CATALOG_FILES" sysconfdir="$out/etc" localstatedir="$out/var" pidpath="$out/run" sss_statedir="$out/var/lib/sss" logpath="$out/var/log/sssd" pubconfpath="$out/var/lib/sss/pubconf" dbpath="$out/var/lib/sss/db" mcpath="$out/var/lib/sss/mc" pipepath="$out/var/lib/sss/pipes" gpocachepath="$out/var/lib/sss/gpo_cache" initdir="$out/rc.d/init.d" install
     rm -rf "$out"/run
     rm -rf "$out"/rc.d
@@ -56,10 +61,11 @@ in stdenv.mkDerivation {
     find "$out" -depth -type d -exec rmdir --ignore-fail-on-non-empty {} \;
   '';
 
-  meta = {
+  meta = with stdenv.lib; {
     inherit version;
     description = "System Security Services Daemon";
     homepage = https://fedorahosted.org/sssd/;
-    license = stdenv.lib.licenses.gpl3;
+    license = licenses.gpl3;
+    maintainers = [ maintainers.e-user ];
   };
 }
