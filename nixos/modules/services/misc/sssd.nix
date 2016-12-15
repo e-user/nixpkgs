@@ -18,7 +18,7 @@ in {
       wants = [ "nss-user-lookup.target" ];
       script = ''
         export LDB_MODULES_PATH+="''${LDB_MODULES_PATH+:}${pkgs.ldb}/modules/ldb:${pkgs.sssd}/modules/ldb"
-        mkdir -p /var/lib/sss/{pubconf,db,mc,pipes,gpo_cache} /var/lib/sss/pipes/private /var/lib/sss/pubconf/krb5.include.d
+        mkdir -p /var/lib/sss/{pubconf,db,mc,pipes,gpo_cache,secrets} /var/lib/sss/pipes/private /var/lib/sss/pubconf/krb5.include.d
         "${pkgs.sssd}/bin/sssd" -D
       '';
       serviceConfig = {
@@ -27,7 +27,7 @@ in {
       };
     };
 
-    system.nss.modules = optional cfg.enable pkgs.sssd;
+    system.nssModules = optional cfg.enable pkgs.sssd;
 
   };
 }

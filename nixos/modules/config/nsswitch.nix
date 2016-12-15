@@ -10,47 +10,29 @@ let
   inherit (config.services.samba) nsswins;
   ldap = (config.users.ldap.enable && config.users.ldap.nsswitch);
   sssd = config.services.sssd.enable;
-  cfg = config.system.nss;
-  
+
 in
 
 {
   options = {
 
     # NSS modules.  Hacky!
-    system.nss = {
-
-      modules = mkOption {
-        type = types.listOf types.package;
-        internal = true;
-        default = [];
-      };
-
-      paths = mkOption {
-        type = types.listOf types.path;
-        internal = true;
-        default = cfg.modules;
-        description = ''
-          Search path for NSS (Name Service Switch) modules.  This allows
-          several DNS resolution methods to be specified via
-          <filename>/etc/nsswitch.conf</filename>.
-        '';
-        apply = list:
-          {
-            inherit list;
-            path = makeLibraryPath list;
-          };
-      };
-    
-      package = mkOption {
-        type = types.package;
-        internal = true;
-        description = ''
-          NSS module package.
-        '';
-      };
-
+    system.nssModules = mkOption {
+      type = types.listOf types.path;
+      internal = true;
+      default = [];
+      description = ''
+        Search path for NSS (Name Service Switch) modules.  This allows
+        several DNS resolution methods to be specified via
+        <filename>/etc/nsswitch.conf</filename>.
+      '';
+      apply = list:
+        {
+          inherit list;
+          path = makeLibraryPath list;
+        };
     };
+
   };
 
   config = {
@@ -76,13 +58,7 @@ in
     # configured IP addresses, or ::1 and 127.0.0.2 as
     # fallbacks. Systemd also provides nss-mymachines to return IP
     # addresses of local containers.
-    system.nssModules = [ config.systemd.package.out ];
+    system.nssModules = [ config.systemd.package.lib ];
 
-    system.activationScripts.setup-nss-modules =
-      ''
-        mkdir -p /run/nss-modules
-        ln -sfn ${package}/lib /run/nss-modules/${baseNameOf pkgs.glibc}
-      '';
   };
-
 }

@@ -16,7 +16,7 @@ in
 
 assert cross != null -> gccCross != null;
 
-let self = stdenv.mkDerivation ({
+stdenv.mkDerivation ({
   inherit linuxHeaders installLocales;
 
   # The host/target system.
@@ -48,11 +48,7 @@ let self = stdenv.mkDerivation ({
          "/bin:/usr/bin", which is inappropriate on NixOS machines. This
          patch extends the search path by "/run/current-system/sw/bin". */
       ./fix_path_attribute_in_getconf.patch
-
-      /* Make nsswitch look in /run/nss-modules first.
-         This is required for SSSD support and potentially other
-         modules not supplied by glibc itself. */
-    ] ++ lib.optional stdenv.isLinux ./glibc-2.24-nixpath.patch;
+    ];
 
   postPatch =
     # Needed for glibc to build with the gnumake 3.82
@@ -164,10 +160,6 @@ let self = stdenv.mkDerivation ({
       ''makeFlags="$makeFlags BUILD_LDFLAGS=-Wl,-rpath,${stdenv.cc.libc}/lib"''
     }
 
-    ${lib.optionalString stdenv.isLinux
-      ''export CPPFLAGS="$CPPFLAGS -DUNIQUE_ID=\\\"$(basename $out)\\\""''
-    }
-
     ${preConfigure}
   '';
 
@@ -191,4 +183,4 @@ let self = stdenv.mkDerivation ({
     maintainers = [ lib.maintainers.eelco ];
     platforms = lib.platforms.linux;
   } // meta;
-}); in self
+})
