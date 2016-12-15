@@ -40,7 +40,7 @@ let
     '');
 
   # This may include nss_ldap, needed for samba if it has to use ldap.
-  nssModulesPath = config.system.nss.modules.path;
+  nssModulesPath = config.system.nssModules.path;
 
   daemonService = appName: args:
     { description = "Samba Service Daemon ${appName}";
@@ -196,7 +196,7 @@ in
 
       (mkIf config.services.samba.enable {
 
-        system.nss.modules = optional cfg.nsswins samba;
+        system.nssModules = optional cfg.nsswins samba;
 
         systemd = {
           targets.samba = {

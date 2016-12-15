@@ -125,7 +125,7 @@ in
       wantedBy = [ "multi-user.target" ];
 
       environment = {
-        LD_LIBRARY_PATH = config.system.nss.modules.path;
+        LD_LIBRARY_PATH = config.system.nssModules.path;
       };
 
       preStart = ''

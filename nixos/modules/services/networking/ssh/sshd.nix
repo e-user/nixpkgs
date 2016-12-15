@@ -7,7 +7,7 @@ let
   cfg  = config.services.openssh;
   cfgc = config.programs.ssh;
 
-  nssModulesPath = config.system.nss.paths.path;
+  nssModulesPath = config.system.nssModules.path;
 
   userOptions = {
 
