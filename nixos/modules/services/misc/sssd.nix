@@ -10,6 +10,11 @@ in {
     };
   };
   config = mkIf cfg.enable {
+    assertions = singleton {
+      assertion = nscd.enable;
+      message = "nscd must be enabled through `services.nscd.enable` for SSSD to work.";
+    };
+
     nixpkgs.config.packageOverrides = pkgs: {
       sssd = pkgs.sssd.override { nscdConfig = nscd.confFile; };
     };
@@ -33,10 +38,6 @@ in {
     };
 
     system.nssModules = optional cfg.enable pkgs.sssd;
-
-    services.nscd = {
-      enable = mkForce true;
-      config = builtins.readFile ./nscd-sssd.conf;
-    };
+    services.nscd.config = builtins.readFile ./nscd-sssd.conf;
   };
 }
