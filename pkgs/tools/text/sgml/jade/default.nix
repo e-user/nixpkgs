@@ -15,20 +15,20 @@ stdenv.mkDerivation (rec {
     sha256 = "8e94486898e3503308805f856a65ba5b499a6f21994151270aa743de48305464";
   };
 
-  enableParallelBuilding = false;
+  patches = [ patchsrc ];
+
+  enableParallelBuilding = true;
   buildInputs = [ gcc gzip gnum4 ];
 
   preConfigure = ''
-    cd "$NIX_BUILD_TOP/$name-$version"
-    gzip -cd "$patchsrc" | patch -p1
-    export CXXFLAGS="$CXXFLAGS -fpermissive"
-    chmod 755 configure
+    export CXXFLAGS="$CXXFLAGS -fpermissive -Wno-deprecated"
   '';
 
-  installPhase = ''
-    cd "$NIX_BUILD_TOP/$name-$version"
+  preInstall = ''
     install -d -m755 "$out"/lib
-    make DESTDIR="$out" install
+  '';
+  
+  postInstall = ''
     mv "$out/bin/sx" "$out/bin/sgml2xml"
   '';
 
@@ -36,6 +36,6 @@ stdenv.mkDerivation (rec {
     description = "James Clark's DSSSL Engine";
     license = "custom";
     homepage = http://www.jclark.com/jade/;
-    maintainers = with stdenv.lib.maintainers; [ benwbooth ];
+    maintainers = with stdenv.lib.maintainers; [ e-user ];
   };
 })
