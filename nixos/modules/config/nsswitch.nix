@@ -48,7 +48,7 @@ in
         hosts:     files ${optionalString nssmdns "mdns_minimal [NOTFOUND=return]"} dns ${optionalString nssmdns "mdns"} ${optionalString nsswins "wins"} myhostname mymachines
         networks:  files dns
         ethers:    files
-        services:  files
+        services:  files ${optionalString sssd "sss"}
         protocols: files
         automount: files ${optionalString ldap "ldap"} ${optionalString sssd "sss"}
       '';
