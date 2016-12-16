@@ -20,9 +20,7 @@ stdenv.mkDerivation (rec {
   enableParallelBuilding = true;
   buildInputs = [ gcc gzip gnum4 ];
 
-  preConfigure = ''
-    export CXXFLAGS="$CXXFLAGS -fpermissive -Wno-deprecated"
-  '';
+  NIX_CFLAGS_COMPILE = [ "-Wno-deprecated" ];
 
   preInstall = ''
     install -d -m755 "$out"/lib
