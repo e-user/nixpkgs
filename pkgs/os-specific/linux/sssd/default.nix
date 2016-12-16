@@ -6,7 +6,7 @@
   nss_wrapper, docbook_xml_dtd_44, ncurses, Po4a, http-parser, jansson }:
 
 let
-  name = "sssd";
+  name = "sssd-${version}";
   version = "1.14.2";
 
   docbookFiles = "${pkgs.docbook_xml_xslt}/share/xml/docbook-xsl/catalog.xml:${pkgs.docbook_xml_dtd_44}/xml/dtd/docbook/catalog.xml";
@@ -79,7 +79,6 @@ stdenv.mkDerivation {
   '';
 
   meta = with stdenv.lib; {
-    inherit version;
     description = "System Security Services Daemon";
     homepage = https://fedorahosted.org/sssd/;
     license = licenses.gpl3;
