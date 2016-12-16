@@ -2,6 +2,7 @@
 with lib;
 let
   cfg = config.services.sssd;
+  nscd = config.services.nscd;
 in {
   options = {
     services.sssd = {
@@ -9,12 +10,16 @@ in {
     };
   };
   config = mkIf cfg.enable {
+    nixpkgs.config.packageOverrides = pkgs: {
+      sssd = pkgs.sssd.override { nscdConfig = nscd.confFile; };
+    };
+
     systemd.services.sssd = {
       description = "System Security Services Daemon";
       wantedBy    = [ "multi-user.target" ];
       before = [ "systemd-user-sessions.service" "nss-user-lookup.target" ];
-      after = [ "network-online.target" ];
-      requires = [ "network-online.target" ];
+      after = [ "network-online.target" "nscd.service" ];
+      requires = [ "network-online.target" "nscd.service" ];
       wants = [ "nss-user-lookup.target" ];
       script = ''
         export LDB_MODULES_PATH+="''${LDB_MODULES_PATH+:}${pkgs.ldb}/modules/ldb:${pkgs.sssd}/modules/ldb"
@@ -29,5 +34,9 @@ in {
 
     system.nssModules = optional cfg.enable pkgs.sssd;
 
+    services.nscd = {
+      enable = mkForce true;
+      config = builtins.readFile ./nscd-sssd.conf;
+    };
   };
 }
