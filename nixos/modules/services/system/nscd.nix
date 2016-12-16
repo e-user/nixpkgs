@@ -6,6 +6,7 @@ let
 
   nssModulesPath = config.system.nssModules.path;
   cfg = config.services.nscd;
+  confFile = config.environment.etc."nscd.conf".source;
 
   inherit (lib) singleton;
 
@@ -31,12 +32,6 @@ in
         description = "Configuration to use for Name Service Cache Daemon.";
       };
 
-      confFile = mkOption {
-        type = types.package;
-        internal = true;
-        default = pkgs.writeText "nscd.conf" cfg.config;
-        description = "Configuration file created for Name Service Cache Daemon.";
-      };
     };
 
   };
@@ -45,6 +40,7 @@ in
   ###### implementation
 
   config = mkIf cfg.enable {
+    environment.etc."nscd.conf".text = cfg.config;
 
     users.extraUsers.nscd =
       { isSystemUser = true;
@@ -65,10 +61,14 @@ in
             mkdir -m 0755 -p /var/db/nscd
           '';
 
-        restartTriggers = [ config.environment.etc.hosts.source config.environment.etc."nsswitch.conf".source ];
+        restartTriggers = [
+          config.environment.etc.hosts.source
+          config.environment.etc."nsswitch.conf".source
+          confFile
+        ];
 
         serviceConfig =
-          { ExecStart = "@${pkgs.glibc.bin}/sbin/nscd nscd -f ${cfg.confFile}";
+          { ExecStart = "@${pkgs.glibc.bin}/sbin/nscd nscd -f ${confFile}";
             Type = "forking";
             PIDFile = "/run/nscd/nscd.pid";
             Restart = "always";
@@ -83,7 +83,7 @@ in
         # its pid. So wait until it's ready.
         postStart =
           ''
-            while ! ${pkgs.glibc.bin}/sbin/nscd -g -f ${cfg.confFile} > /dev/null; do
+            while ! ${pkgs.glibc.bin}/sbin/nscd -g -f ${confFile} > /dev/null; do
               sleep 0.2
             done
           '';
