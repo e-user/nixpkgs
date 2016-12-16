@@ -56,21 +56,22 @@ stdenv.mkDerivation {
     "SGML_CATALOG_FILES=${docbookFiles}"
   ];
 
-  installPhase = ''
-    make install \
-     sysconfdir="$out/etc" \
-     localstatedir="$out/var" \
-     pidpath="$out/run" \
-     sss_statedir="$out/var/lib/sss" \
-     logpath="$out/var/log/sssd" \
-     pubconfpath="$out/var/lib/sss/pubconf" \
-     dbpath="$out/var/lib/sss/db" \
-     mcpath="$out/var/lib/sss/mc" \
-     pipepath="$out/var/lib/sss/pipes" \
-     gpocachepath="$out/var/lib/sss/gpo_cache" \
-     secdbpath="$out/var/lib/sss/secrets" \
-     initdir="$out/rc.d/init.d"
+  installFlags = [
+     "sysconfdir=$(out)/etc"
+     "localstatedir=$(out)/var"
+     "pidpath=$(out)/run"
+     "sss_statedir=$(out)/var/lib/sss"
+     "logpath=$(out)/var/log/sssd"
+     "pubconfpath=$(out)/var/lib/sss/pubconf"
+     "dbpath=$(out)/var/lib/sss/db"
+     "mcpath=$(out)/var/lib/sss/mc"
+     "pipepath=$(out)/var/lib/sss/pipes"
+     "gpocachepath=$(out)/var/lib/sss/gpo_cache"
+     "secdbpath=$(out)/var/lib/sss/secrets"
+     "initdir=$(out)/rc.d/init"
+  ];
 
+  postInstall = ''
     rm -rf "$out"/run
     rm -rf "$out"/rc.d
     rm -f "$out"/modules/ldb/memberof.la
