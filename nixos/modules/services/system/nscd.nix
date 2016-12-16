@@ -6,7 +6,6 @@ let
 
   nssModulesPath = config.system.nssModules.path;
   cfg = config.services.nscd;
-  confFile = config.environment.etc."nscd.conf".source;
 
   inherit (lib) singleton;
 
@@ -64,11 +63,11 @@ in
         restartTriggers = [
           config.environment.etc.hosts.source
           config.environment.etc."nsswitch.conf".source
-          confFile
+          config.environment.etc."nscd.conf".source
         ];
 
         serviceConfig =
-          { ExecStart = "@${pkgs.glibc.bin}/sbin/nscd nscd -f ${confFile}";
+          { ExecStart = "@${pkgs.glibc.bin}/sbin/nscd nscd";
             Type = "forking";
             PIDFile = "/run/nscd/nscd.pid";
             Restart = "always";
@@ -83,7 +82,7 @@ in
         # its pid. So wait until it's ready.
         postStart =
           ''
-            while ! ${pkgs.glibc.bin}/sbin/nscd -g -f ${confFile} > /dev/null; do
+            while ! ${pkgs.glibc.bin}/sbin/nscd -g > /dev/null; do
               sleep 0.2
             done
           '';
