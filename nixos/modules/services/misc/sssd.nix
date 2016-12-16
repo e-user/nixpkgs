@@ -3,6 +3,7 @@ with lib;
 let
   cfg = config.services.sssd;
   nscd = config.services.nscd;
+  nscdConfig = config.environment.etc."nscd.conf".source;
 in {
   options = {
     services.sssd = {
@@ -16,7 +17,7 @@ in {
     };
 
     nixpkgs.config.packageOverrides = pkgs: {
-      sssd = pkgs.sssd.override { nscdConfig = nscd.confFile; };
+      sssd = pkgs.sssd.override { nscdConfig = nscdConfig; };
     };
 
     systemd.services.sssd = {
@@ -26,6 +27,9 @@ in {
       after = [ "network-online.target" "nscd.service" ];
       requires = [ "network-online.target" "nscd.service" ];
       wants = [ "nss-user-lookup.target" ];
+      restartTriggers = [
+        nscdConfig
+      ];
       script = ''
         export LDB_MODULES_PATH+="''${LDB_MODULES_PATH+:}${pkgs.ldb}/modules/ldb:${pkgs.sssd}/modules/ldb"
         mkdir -p /var/lib/sss/{pubconf,db,mc,pipes,gpo_cache,secrets} /var/lib/sss/pipes/private /var/lib/sss/pubconf/krb5.include.d
