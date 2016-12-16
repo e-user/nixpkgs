@@ -3917,7 +3917,6 @@ in
   sssd = callPackage ../os-specific/linux/sssd {
     inherit (perlPackages) Po4a;
     inherit (python27Packages) ldap;
-    nscdConfig = null;
   };
 
   vtun = callPackage ../tools/networking/vtun { };

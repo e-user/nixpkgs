@@ -3,7 +3,6 @@ with lib;
 let
   cfg = config.services.sssd;
   nscd = config.services.nscd;
-  nscdConfig = config.environment.etc."nscd.conf".source;
 in {
   options = {
     services.sssd = {
@@ -16,10 +15,6 @@ in {
       message = "nscd must be enabled through `services.nscd.enable` for SSSD to work.";
     };
 
-    nixpkgs.config.packageOverrides = pkgs: {
-      sssd = pkgs.sssd.override { nscdConfig = nscdConfig; };
-    };
-
     systemd.services.sssd = {
       description = "System Security Services Daemon";
       wantedBy    = [ "multi-user.target" ];
@@ -28,7 +23,7 @@ in {
       requires = [ "network-online.target" "nscd.service" ];
       wants = [ "nss-user-lookup.target" ];
       restartTriggers = [
-        nscdConfig
+        config.environment.etc."nscd.conf".source
       ];
       script = ''
         export LDB_MODULES_PATH+="''${LDB_MODULES_PATH+:}${pkgs.ldb}/modules/ldb:${pkgs.sssd}/modules/ldb"
