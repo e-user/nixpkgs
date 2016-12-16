@@ -456,7 +456,7 @@ in
       # Include the PAM modules in the system path mostly for the manpages.
       [ pkgs.pam ]
       ++ optional config.users.ldap.enable pam_ldap
-      ++ optionals config.services.sssd.enable [ pkgs.sssd ]
+      ++ optional config.services.sssd.enable pkgs.sssd
       ++ optionals config.krb5.enable [pam_krb5 pam_ccreds]
       ++ optionals config.security.pam.enableOTPW [ pkgs.otpw ]
       ++ optionals config.security.pam.oath.enable [ pkgs.oathToolkit ]
