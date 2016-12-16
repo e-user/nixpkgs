@@ -15,25 +15,8 @@ in stdenv.mkDerivation {
   enableParallelBuilding = true;
   buildInputs = [ glibc doxygen check ];
 
-  preConfigure = ''
-    configureFlags="--prefix=/ --disable-static"
-  '';
-
-  buildPhase = ''
-    cd "$NIX_BUILD_TOP/$name-$version"
-    make all docs
-  '';
-
+  buildFlags = "docs";
   doCheck = true;
-  checkPhase = ''
-    cd "$NIX_BUILD_TOP/$name-$version"
-    make check
-  '';
-
-  installPhase = ''
-    cd "$NIX_BUILD_TOP/$name-$version"
-    make DESTDIR="$out/" install
-  '';
 
   meta = {
     description = "'D is not GLib' utility libraries";
