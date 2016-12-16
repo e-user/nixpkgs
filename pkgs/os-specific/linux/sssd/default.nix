@@ -3,8 +3,7 @@
   python, python3, pam, popt, talloc, tdb, tevent, pkgconfig, ldb, openldap,
   pcre, kerberos, cifs_utils, glib, keyutils, dbus, fakeroot, libxslt, libxml2,
   docbook_xml_xslt, ldap, systemd, nspr, check, cmocka, uid_wrapper,
-  nss_wrapper, docbook_xml_dtd_44, ncurses, Po4a, http-parser, jansson,
-  nscdConfig }:
+  nss_wrapper, docbook_xml_dtd_44, ncurses, Po4a, http-parser, jansson }:
 
 let
   name = "sssd";
@@ -41,11 +40,7 @@ stdenv.mkDerivation {
       --without-semanage
       --with-xml-catalog-path=''${SGML_CATALOG_FILES%%:*}
       --with-ldb-lib-dir=$out/modules/ldb
-      ${lib.optionalString (nscdConfig != null) ''
-        --with-nscd=${glibc.bin}/sbin/nscd
-        --with-nscd-conf=${nscdConfig}
-      ''
-      }
+      --with-nscd=${glibc.bin}/sbin/nscd
     )
   '';
 
