@@ -16,7 +16,7 @@ stdenv.mkDerivation {
   inherit version;
 
   src = fetchurl {
-    url = "https://fedorahosted.org/released/${name}/${name}-${version}.tar.gz";
+    url = "https://fedorahosted.org/released/${name}/${name}.tar.gz";
     sha1 = "167b2216c536035175ff041d0449e0a874c68601";
   };
 
