@@ -1,13 +1,15 @@
-{ stdenv, fetchurl, pkgs, lib, glibc, augeas, bind, c-ares,
+{ stdenv, fetchurl, pkgs, lib, config, glibc, augeas, bind, c-ares,
   cyrus_sasl, ding-libs, libnl, libunistring, nss, samba, libnfsidmap, doxygen,
   python, python3, pam, popt, talloc, tdb, tevent, pkgconfig, ldb, openldap,
   pcre, kerberos, cifs_utils, glib, keyutils, dbus, fakeroot, libxslt, libxml2,
   docbook_xml_xslt, ldap, systemd, nspr, check, cmocka, uid_wrapper,
-  nss_wrapper, docbook_xml_dtd_44, ncurses, Po4a, http-parser, jansson }:
+  nss_wrapper, docbook_xml_dtd_44, ncurses, Po4a, http-parser, jansson,
+  nscdConfig }:
 
 let
   name = "sssd";
   version = "1.14.2";
+
   docbookFiles = "${pkgs.docbook_xml_xslt}/share/xml/docbook-xsl/catalog.xml:${pkgs.docbook_xml_dtd_44}/xml/dtd/docbook/catalog.xml";
 in
 stdenv.mkDerivation {
@@ -39,7 +41,11 @@ stdenv.mkDerivation {
       --without-semanage
       --with-xml-catalog-path=''${SGML_CATALOG_FILES%%:*}
       --with-ldb-lib-dir=$out/modules/ldb
-      --with-nscd=${glibc.bin}/sbin/nscd
+      ${lib.optionalString (nscdConfig != null) ''
+        --with-nscd=${glibc.bin}/sbin/nscd
+        --with-nscd-conf=${nscdConfig}
+      ''
+      }
     )
   '';
 

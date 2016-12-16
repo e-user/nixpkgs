@@ -9,8 +9,6 @@ let
 
   inherit (lib) singleton;
 
-  cfgFile = pkgs.writeText "nscd.conf" cfg.config;
-
 in
 
 {
@@ -33,6 +31,12 @@ in
         description = "Configuration to use for Name Service Cache Daemon.";
       };
 
+      confFile = mkOption {
+        type = types.package;
+        internal = true;
+        default = pkgs.writeText "nscd.conf" cfg.config;
+        description = "Configuration file created for Name Service Cache Daemon.";
+      };
     };
 
   };
@@ -64,7 +68,7 @@ in
         restartTriggers = [ config.environment.etc.hosts.source config.environment.etc."nsswitch.conf".source ];
 
         serviceConfig =
-          { ExecStart = "@${pkgs.glibc.bin}/sbin/nscd nscd -f ${cfgFile}";
+          { ExecStart = "@${pkgs.glibc.bin}/sbin/nscd nscd -f ${cfg.confFile}";
             Type = "forking";
             PIDFile = "/run/nscd/nscd.pid";
             Restart = "always";
@@ -79,7 +83,7 @@ in
         # its pid. So wait until it's ready.
         postStart =
           ''
-            while ! ${pkgs.glibc.bin}/sbin/nscd -g -f ${cfgFile} > /dev/null; do
+            while ! ${pkgs.glibc.bin}/sbin/nscd -g -f ${cfg.confFile} > /dev/null; do
               sleep 0.2
             done
           '';
