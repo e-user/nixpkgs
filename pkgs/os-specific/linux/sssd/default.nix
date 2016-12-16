@@ -1,4 +1,4 @@
-{ stdenv, fetchurl, pkgs, lib, config, glibc, augeas, bind, c-ares,
+{ stdenv, fetchurl, pkgs, lib, glibc, augeas, bind, c-ares,
   cyrus_sasl, ding-libs, libnl, libunistring, nss, samba, libnfsidmap, doxygen,
   python, python3, pam, popt, talloc, tdb, tevent, pkgconfig, ldb, openldap,
   pcre, kerberos, cifs_utils, glib, keyutils, dbus, fakeroot, libxslt, libxml2,
