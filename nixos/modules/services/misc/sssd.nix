@@ -56,7 +56,7 @@ in {
         wants = [ "nss-user-lookup.target" ];
         restartTriggers = [
           config.environment.etc."nscd.conf".source
-          config.environment.etc."sssd.conf".source
+          config.environment.etc."sssd/sssd.conf".source
         ];
         script = ''
           export LDB_MODULES_PATH+="''${LDB_MODULES_PATH+:}${pkgs.ldb}/modules/ldb:${pkgs.sssd}/modules/ldb"
@@ -69,10 +69,14 @@ in {
         };
       };
 
-      environment.etc."sssd.conf".text = cfg.config;
+      environment.etc."sssd/sssd.conf" = {
+        text = cfg.config;
+        mode = "0400";
+      };
 
       system.nssModules = optional cfg.enable pkgs.sssd;
       services.nscd.config = builtins.readFile ./nscd-sssd.conf;
+      services.dbus.packages = [ pkgs.sssd ];
     })
 
     (mkIf cfg.sshAuthorizedKeysIntegration {
