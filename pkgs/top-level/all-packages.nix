@@ -7281,6 +7281,8 @@ in
 
   freeimage = callPackage ../development/libraries/freeimage { };
 
+  freeipa = callPackage ../os-specific/linux/freeipa { };
+
   freetts = callPackage ../development/libraries/freetts { };
 
   cfitsio = callPackage ../development/libraries/cfitsio { };
