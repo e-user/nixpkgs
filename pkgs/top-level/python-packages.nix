@@ -29932,4 +29932,27 @@ in modules // {
     };
   };
 
+  nss = buildPythonPackage rec {
+    name = "nss-${version}";
+    version = "1.0.0";
+    src = pkgs.fetchurl {
+      url = "https://ftp.mozilla.org/pub/security/python-nss/releases/PYNSS_RELEASE_${replaceStrings ["."] ["_"] version}/src/python-${name}.tar.bz2";
+      sha1 = "8403f759a514726b9360b68f4d5e4f50bc422197";
+    };
+
+    buildInputs = with self; [ pytest pkgs.nss pkgs.nspr ];
+    patchPhase = ''
+      sed -i -e "s/find_include_dir(\['nspr4', 'nspr'\]/find_include_dir(['.']/" setup.py
+      sed -i -e "s#include_roots = \[\]#include_roots = [${concatStringsSep ", " (map (pkg: "'" + pkg.dev + "/include'") [ pkgs.nss pkgs.nspr ])}]#" setup.py
+    '';
+
+    meta = {
+      description = "Python binding for NSS";
+      homepage    = https://developer.mozilla.org/en-US/docs/Mozilla/Projects/NSS/Python_binding_for_NSS;
+      license     = licenses.mpl20;
+      maintainers = with maintainers; [ e-user ];
+      platforms   = platforms.all;
+    };
+  };
+
 }
