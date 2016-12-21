@@ -29964,4 +29964,78 @@ in modules // {
     };
   };
 
+  pki = buildPythonPackage rec {
+    name = "pki-${version}";
+    version = "10.3.5";
+
+    upstreamName = "pki-core-${version}";
+    rpmFile = "${upstreamName}-7.fc25.src.rpm";
+    
+    src = pkgs.fetchurl {
+      url = "mirror://fedora/linux/releases/25/Everything/source/tree/Packages/p/${rpmFile}";
+      sha256 = "18kva88qqjfbkccaw1j889jfm95zk8a63xhy05ldj07yfqz38vsz";
+    };
+
+    patches = [
+      "pki-core-snapshot-1.patch"
+      "pki-core-snapshot-2.patch"
+      "pki-core-snapshot-3.patch"
+      "pki-core-snapshot-4.patch"
+      "pki-core-fedora-post-snapshot-1.patch"
+    ];
+
+    patchFlags = "-p1 -F 3";
+
+    buildInputs = with self; [ pytest sphinx pkgs.rpmextract ];
+    propagatedBuildInputs = with self; [ nss requests2 six ];
+        
+    unpackPhase = ''
+      rpmextract $src
+      tar -xf ${upstreamName}.tar.gz
+      mv *.patch ${upstreamName}/
+      mkdir ${upstreamName}/specs 
+      mv pki-core.spec ${upstreamName}/specs/
+    '';
+
+    sourceRoot = upstreamName;
+
+    preBuild = ''
+      cd base/common/python
+      unset SOURCE_DATE_EPOCH
+    '';
+
+    meta = {
+      description = "Client library for Dogtag Certificate System";
+      homepage    = http://pki.fedoraproject.org/;
+      license     = licenses.lgpl3Plus;
+      maintainers = [ maintainers.e-user ];
+      platforms   = platforms.all;
+    };
+  };
+
+  lesscpy = buildPythonPackage rec {
+    name    = pname + "-" + version;
+    pname   = "lesscpy";
+    version = "0.12.0";
+
+    src = pkgs.fetchurl {
+      url = "mirror://pypi/l/${pname}/${name}.tar.gz";
+      sha256 = "1dcql1bgh70a9avbx9b8mq9gzdp76v8bszlik96x3rf6xxbjfmaw";
+    };
+
+    buildInputs = with self; [ pytest pkgs.makeWrapper ];
+    propagatedBuildInputs = with self; [ ply six ];
+
+    doCheck = false; # Really weird test failures (`nix-build-python2.css not found`)
+
+    meta = {
+      description = "Python LESS Compiler";
+      homepage    = https://github.com/lesscpy/lesscpy;
+      license     = licenses.mit;
+      maintainers = with maintainers; [ e-user ];
+      platforms   = platforms.all;
+    };
+
+  };
+  
 }

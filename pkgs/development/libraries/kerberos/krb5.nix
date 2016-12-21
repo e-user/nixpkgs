@@ -1,5 +1,5 @@
 { stdenv, fetchurl, pkgconfig, perl, yacc, bootstrap_cmds
-, openssl, openldap, libedit
+, openssl, openldap, libedit, libverto
 
 # Extra Arguments
 , type ? ""
@@ -18,12 +18,13 @@ stdenv.mkDerivation rec {
     sha256 = "1jgjiyh1sp72lkxvk437lz5hzcibvw99jc4ihzfz03fg43aj0ind";
   };
 
-  configureFlags = optional stdenv.isFreeBSD ''WARN_CFLAGS=""'';
+  configureFlags = [ "--with-system-verto" ]
+    ++ optional stdenv.isFreeBSD ''WARN_CFLAGS=""'';
 
   nativeBuildInputs = [ pkgconfig perl yacc ]
     # Provides the mig command used by the build scripts
     ++ optional stdenv.isDarwin bootstrap_cmds;
-  buildInputs = [ openssl ]
+  buildInputs = [ openssl libverto ]
     ++ optionals (!libOnly) [ openldap libedit ];
 
   patches = [ ./path_char_fix.patch ];
