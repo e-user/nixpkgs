@@ -2452,6 +2452,8 @@ with pkgs;
 
   lf = callPackage ../tools/misc/lf {};
 
+  lesscpy = pythonPackages.lesscpy;
+
   lhasa = callPackage ../tools/compression/lhasa {};
 
   libcpuid = callPackage ../tools/misc/libcpuid { };
@@ -7248,7 +7250,20 @@ with pkgs;
 
   freeimage = callPackage ../development/libraries/freeimage { };
 
-  freeipa = callPackage ../os-specific/linux/freeipa { };
+  freeipaKerberos = krb5Full.override { inherit libverto; };
+
+  freeipa = callPackage ../os-specific/linux/freeipa {
+    kerberos = freeipaKerberos;
+    sasl = cyrus_sasl;
+    curl = curlFull; # ipa-join requires curl with GSSAPI delegation
+    inherit (python27Packages)
+      six ldap dns netaddr netifaces gssapi pyasn1 cffi lxml pki dbus-python
+      cryptography memcached lesscpy;
+    pyhbac = sssd;
+    nss-python = python27Packages.nss;
+    dirsrv = pkgs."389-ds-base";
+    samba = samba4.override { enableLDAP = true; };
+  };
 
   freetts = callPackage ../development/libraries/freetts { };
 
@@ -8662,6 +8677,8 @@ with pkgs;
   libvdpau-va-gl = callPackage ../development/libraries/libvdpau-va-gl {
     libva = libva-full; # also wants libva-{x11}
   };
+
+  libverto = callPackage ../development/libraries/libverto { };
 
   libvirt = callPackage ../development/libraries/libvirt { };
 
