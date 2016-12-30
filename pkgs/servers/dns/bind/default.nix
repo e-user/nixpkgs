@@ -1,5 +1,6 @@
-{ stdenv, fetchurl, openssl, libtool, perl, libxml2
-, libseccomp ? null }:
+{ stdenv, fetchurl, openssl, libtool, perl, libxml2, kerberos
+, libseccomp ? null
+, enableGSS ? false }:
 
 let version = "9.10.4-P5"; in
 
@@ -17,7 +18,8 @@ stdenv.mkDerivation rec {
     stdenv.lib.optional stdenv.isDarwin ./darwin-openssl-linking-fix.patch;
 
   buildInputs = [ openssl libtool perl libxml2 ] ++
-    stdenv.lib.optional stdenv.isLinux libseccomp;
+    stdenv.lib.optional stdenv.isLinux libseccomp ++
+    stdenv.lib.optional enableGSS kerberos;
 
   configureFlags = [
     "--localstatedir=/var"
@@ -27,14 +29,13 @@ stdenv.mkDerivation rec {
     "--without-atf"
     "--without-dlopen"
     "--without-docbook-xsl"
-    "--without-gssapi"
     "--without-idn"
     "--without-idnlib"
     "--without-pkcs11"
     "--without-purify"
     "--without-python"
     "--enable-seccomp"
-  ];
+  ] ++ stdenv.lib.optional enableGSS "--with-gssapi";
 
   postInstall = ''
     moveToOutput bin/bind9-config $dev
