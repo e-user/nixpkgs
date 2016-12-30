@@ -7283,10 +7283,20 @@ in
 
   freeimage = callPackage ../development/libraries/freeimage { };
 
+  freeipaCurl = curl.override {
+    gssSupport = true;
+    gss = krb5Full;
+  };
+
+  freeipaBind = bind.override {
+    enableGSS = true;
+  };
+    
   freeipa = callPackage ../os-specific/linux/freeipa {
     kerberos = krb5Full;
     sasl = cyrus_sasl;
-    curl = curlFull; # ipa-join requires curl with GSSAPI delegation
+    # ipa-join requires curl with krb5 GSSAPI delegation
+    curl = freeipaCurl;
     inherit (python27Packages)
       six ldap dns netaddr netifaces gssapi pyasn1 cffi lxml pki dbus-python
       cryptography memcached lesscpy;
@@ -7294,6 +7304,7 @@ in
     nss-python = python27Packages.nss;
     dirsrv = pkgs."389-ds-base";
     samba = samba4.override { enableLDAP = true; };
+    bind = freeipaBind;
   };
 
   freetts = callPackage ../development/libraries/freetts { };
