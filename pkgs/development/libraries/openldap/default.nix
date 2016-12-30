@@ -18,9 +18,12 @@ stdenv.mkDerivation rec {
   configureFlags =
     [ "--enable-overlays"
       "--disable-dependency-tracking"   # speeds up one-time build
+      "--sysconfdir=/etc"
     ] ++ stdenv.lib.optional (openssl == null) "--without-tls"
       ++ stdenv.lib.optional (cyrus_sasl == null) "--without-cyrus-sasl"
       ++ stdenv.lib.optional stdenv.isFreeBSD "--with-pic";
+
+  installFlags = [ "sysconfdir=$(out)/etc" ];
 
   # 1. Fixup broken libtool
   # 2. Libraries left in the build location confuse `patchelf --shrink-rpath`
