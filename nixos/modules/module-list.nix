@@ -8,6 +8,7 @@
   ./config/fonts/ghostscript.nix
   ./config/gnu.nix
   ./config/i18n.nix
+  ./config/ipa.nix
   ./config/krb5.nix
   ./config/ldap.nix
   ./config/networking.nix
@@ -404,7 +405,6 @@
   ./services/networking/i2pd.nix
   ./services/networking/i2p.nix
   ./services/networking/iodine.nix
-  ./services/networking/ipa.nix
   ./services/networking/ircd-hybrid/default.nix
   ./services/networking/kippo.nix
   ./services/networking/kresd.nix
