@@ -9,9 +9,7 @@ let
   ldap = config.users.ldap;
   pyBool = x: if x then "True" else "False";
 
-  ldapConf = writeText "ldap.conf" ''
-    TLS_CACERTDIR   /etc/openldap/certs                                             
-                                                                                
+  ldapConf = pkgs.writeText "ldap.conf" ''
     # Turning this off breaks GSSAPI used with krb5 when rdns = false               
     SASL_NOCANON    on                                                              
 
@@ -22,12 +20,14 @@ let
   certificate = pkgs.runCommand "ca.crt" { buildInputs = [ pkgs.freeipaCurl ]; } ''
     ${pkgs.freeipaCurl}/bin/curl -k ${cfg.server}/ipa/config/ca.crt > $out
   '';
-  nssDb = pkgs.runCommand "ipa-nssdb" { buildInputs = [ certificate nss.tools ]; } ''
+  nssDb = pkgs.runCommand "ipa-nssdb" { buildInputs = [ pkgs.nss.tools ]; } ''
+    set -x
     mkdir -p $out
-    < /dev/random tr -dc '[:print:]' | head -c 40 > $out/pwdfile.txt
+    < /dev/random tr -dc '[:print:]' | head -c 40 > $out/pwdfile.txt ||:
     chmod 600 $out/pwdfile.txt
     certutil -d $out -N -f $out/pwdfile.txt
     chmod 644 $out/*.db
+    certutil -d $out -A -f $out/pwdfile -n "${cfg.realm} IPA CA" -t CT,C,C -i ${certificate}
   '';
 in {
   options = {
@@ -113,52 +113,59 @@ in {
       }
     ];
 
-    environment.systemPackages = with pkgs; [ freeipa krb5Full freeipaCurl freeipaBind ];
+    environment.systemPackages = with pkgs; [ freeipa krb5Full freeipaCurl freeipaBind openldap ];
 
-    environment.etc."ipa/default.conf".text = ''
-      [global]
-      basedn = ${cfg.basedn}
-      realm = ${cfg.realm}
-      domain = ${cfg.domain}
-      server = ${cfg.server}
-      host = ${config.networking.hostName}
-      xmlrpc_uri = https://${cfg.server}/ipa/xml
-      enable_ra = True
-    '';
+    environment.etc = mkMerge [{
+      "ipa/default.conf".text = ''
+        [global]
+        basedn = ${cfg.basedn}
+        realm = ${cfg.realm}
+        domain = ${cfg.domain}
+        server = ${cfg.server}
+        host = ${config.networking.hostName}
+        xmlrpc_uri = https://${cfg.server}/ipa/xml
+        enable_ra = True
+      '';
 
-    environment.etc."krb5.conf".text = ''
-      [libdefaults]
-       default_realm = ${cfg.realm}
-       dns_lookup_realm = false
-       dns_lookup_kdc = true
-       rdns = false
-       ticket_lifetime = 24h
-       forwardable = true
-       udp_preference_limit = 0
+      "ipa/nssdb".source = nssDb;
+      
+      "krb5.conf".text = ''
+        [libdefaults]
+         default_realm = ${cfg.realm}
+         dns_lookup_realm = false
+         dns_lookup_kdc = true
+         rdns = false
+         ticket_lifetime = 24h
+         forwardable = true
+         udp_preference_limit = 0
 
-      [realms]
-       ${cfg.realm} = {
-        kdc = ${cfg.server}:88
-        master_kdc = ${cfg.server}:88
-        admin_server = ${cfg.server}:749
-        default_domain = ${cfg.domain}
-        pkinit_anchors = FILE:/etc/ipa/ca.crt
-      }
-
-      [domain_realm]
-       .${cfg.domain} = ${cfg.realm}
-       ${cfg.domain} = ${cfg.realm}
-       ${cfg.server} = ${cfg.realm}
-
-      [dbmodules]
-        ${cfg.realm} = {
-          db_library = ${pkgs.freeipa}/lib/krb5/plugins/kdb/ipadb.so
+        [realms]
+         ${cfg.realm} = {
+          kdc = ${cfg.server}:88
+          master_kdc = ${cfg.server}:88
+          admin_server = ${cfg.server}:749
+          default_domain = ${cfg.domain}
+          pkinit_anchors = FILE:/etc/ipa/ca.crt
         }
-    '';
 
-    environment.etc."chromium/policies/managed/freeipa.json".text = ''
-      { "AuthServerWhitelist": "*.${cfg.domain}" }
-    '';
+        [domain_realm]
+         .${cfg.domain} = ${cfg.realm}
+         ${cfg.domain} = ${cfg.realm}
+         ${cfg.server} = ${cfg.realm}
+
+        [dbmodules]
+          ${cfg.realm} = {
+            db_library = ${pkgs.freeipa}/lib/krb5/plugins/kdb/ipadb.so
+          }
+      '';
+
+      "opanldap/ldap.conf".source = ldapConf;
+    }
+    (mkIf cfg.chromiumSupport {
+      "chromium/policies/managed/freeipa.json".text = ''
+        { "AuthServerWhitelist": "*.${cfg.domain}" }
+      '';
+    })];
     
     system.activationScripts.ipa = stringAfter [ "etc" ] ''
       # libcurl requires a hard copy of the certificate
