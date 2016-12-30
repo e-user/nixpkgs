@@ -7252,17 +7252,30 @@ with pkgs;
 
   freeipaKerberos = krb5Full.override { inherit libverto; };
 
+  freeipaCurl = curl.override {
+    gssSupport = true;
+    gss = krb5Full;
+  };
+
+  freeipaBind = bind.override {
+    enableGSS = true;
+  };
+
+  freeipaSamba = samba4.override { enableLDAP = true; };
+          
   freeipa = callPackage ../os-specific/linux/freeipa {
     kerberos = freeipaKerberos;
     sasl = cyrus_sasl;
-    curl = curlFull; # ipa-join requires curl with GSSAPI delegation
+    # ipa-join requires curl with krb5 GSSAPI delegation
+    curl = freeipaCurl;
     inherit (python27Packages)
       six ldap dns netaddr netifaces gssapi pyasn1 cffi lxml pki dbus-python
       cryptography memcached lesscpy;
     pyhbac = sssd;
     nss-python = python27Packages.nss;
     dirsrv = pkgs."389-ds-base";
-    samba = samba4.override { enableLDAP = true; };
+    samba = freeipaSamba;
+    bind = freeipaBind;
   };
 
   freetts = callPackage ../development/libraries/freetts { };

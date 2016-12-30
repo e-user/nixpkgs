@@ -1,14 +1,15 @@
-{ stdenv, fetchurl, pkgconfig, autoconf, automake, kerberos, openldap, popt,
-  sasl, curl, xmlrpc_c, ding-libs, p11_kit, gettext, nspr, nss, dirsrv, svrcore,
-  libuuid, talloc, tevent, samba, libunistring, libverto, systemd, python2,
-  six, ldap, dns, netaddr, netifaces, gssapi, nss-python, pyasn1, pyhbac, cffi,
-  lxml, pki, dbus-python, cryptography, memcached, jre, rhino, lesscpy,
-  pythonPackages }:
+{ stdenv, fetchurl, writeText, pkgconfig, autoconf, automake, kerberos,
+  openldap, popt, sasl, curl, xmlrpc_c, ding-libs, p11_kit, gettext, nspr, nss,
+  dirsrv, svrcore, libuuid, talloc, tevent, samba, libunistring, libverto,
+  systemd, python2, six, ldap, dns, netaddr, netifaces, gssapi, nss-python,
+  pyasn1, pyhbac, cffi, lxml, pki, dbus-python, cryptography, memcached, jre,
+  rhino, lesscpy, bind, pythonPackages }:
 
 let
   name = "freeipa-${version}";
   version = "4.4.3";
   ipa-client-install = ./ipa-client-install;
+  pathsPy = ./paths.py;
 in
 stdenv.mkDerivation rec {
   inherit name;
@@ -27,15 +28,15 @@ stdenv.mkDerivation rec {
     six ldap dns netaddr netifaces gssapi nss-python pyasn1 pyhbac cffi lxml pki
     dbus-python cryptography memcached
   ];
-    
+
   buildInputs = [
     kerberos openldap popt sasl curl xmlrpc_c pkgconfig ding-libs p11_kit
     python2 autoconf nspr nss dirsrv svrcore libuuid talloc tevent samba
-    libunistring libverto systemd
+    libunistring libverto systemd bind
   ] ++ pythonInputs;
 
   postPatch = ''
-    export SUPPORTED_PLATFORM=fedora 
+    export SUPPORTED_PLATFORM=nixos
     export IPA_VERSION_IS_GIT_SNAPSHOT=no
 
     for file in makeapi makeaci install/ui/util; do patchShebangs $file; done
@@ -63,6 +64,16 @@ stdenv.mkDerivation rec {
       substituteInPlace $file \
         --replace "setup.py install --root" "setup.py install --prefix"
     done
+
+    substituteInPlace client/ipa-join.c \
+      --replace /usr/sbin/ipa-getkeytab $out/bin/ipa-getkeytab
+
+    cp -r ipaplatform/{fedora,nixos}
+    substitute ${pathsPy} ipaplatform/nixos/paths.py \
+      --subst-var out \
+      --subst-var-by bind ${bind.bin} \
+      --subst-var-by curl ${curl} \
+      --subst-var-by kerberos ${kerberos}
   '';
 
   PYTHON="${python2}/bin/python";
@@ -87,11 +98,11 @@ stdenv.mkDerivation rec {
   NIX_CFLAGS_COMPILE = "-I${dirsrv}/include/dirsrv";
   pythonPath = pythonInputs;
   prefix = "/";
-  
+
   # Building and installing the server fails with silent Rhino errors, skipping
   # for now. Need a newer Rhino version.
   #buildFlags = [ "client" "server" ];
-  
+
   buildFlags = [ "client" ];
   installFlags = [ "DESTDIR=$(out)" ];
   installTargets = "client-install";
@@ -99,9 +110,9 @@ stdenv.mkDerivation rec {
   checkTargets = [ "client-check" ];
 
   postInstall = ''
-     cat ${ipa-client-install} > $out/sbin/ipa-client-install
+    cat ${ipa-client-install} > $out/sbin/ipa-client-install
   '';
-    
+
   postFixup = ''
     wrapPythonPrograms
     rmdir -p --ignore-fail-on-non-empty \
