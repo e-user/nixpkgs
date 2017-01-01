@@ -30025,7 +30025,7 @@ in modules // {
 
     buildInputs = with self; [ pytest pkgs.makeWrapper ];
     propagatedBuildInputs = with self; [ ply six ];
-
+    
     doCheck = false; # Really weird test failures (`nix-build-python2.css not found`)
 
     meta = {
@@ -30035,7 +30035,33 @@ in modules // {
       maintainers = with maintainers; [ e-user ];
       platforms   = platforms.all;
     };
-
   };
+
+  yubico = buildPythonPackage rec {
+    name    = pname + "-" + version;
+    pname   = "python-yubico";
+    version = "1.3.2";
+
+    src = pkgs.fetchurl {
+      url = "mirror://pypi/p/${pname}/${name}.tar.gz";
+      sha256 = "1gd3an1cdcq328nr1c9ijrsf32v0crv6dgq7knld8m9cadj517c7";
+    };
+
+    buildInputs = with self; [ pytest ];
+    propagatedBuildInputs = with self; [ pyusb ];
+
+    checkPhase =  ''
+      py.test -k "not usb"
+    '';
+    
+    meta = {
+      description = "Python code to talk to YubiKeys";
+      homepage    = https://github.com/Yubico/python-yubico;
+      license     = licenses.bsd2;
+      maintainers = with maintainers; [ e-user ];
+      platforms   = platforms.all;
+    };
+  };
+
   
 }
