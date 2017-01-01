@@ -23,7 +23,7 @@ let
   nssDb = pkgs.runCommand "ipa-nssdb" { buildInputs = [ pkgs.nss.tools ]; } ''
     set -x
     mkdir -p $out
-    < /dev/random tr -dc '[:print:]' | head -c 40 > $out/pwdfile.txt ||:
+    < /dev/urandom tr -dc '[:print:]' | head -c 40 > $out/pwdfile.txt ||:
     chmod 600 $out/pwdfile.txt
     certutil -d $out -N -f $out/pwdfile.txt
     chmod 644 $out/*.db
