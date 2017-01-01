@@ -7270,7 +7270,7 @@ with pkgs;
     curl = freeipaCurl;
     inherit (python27Packages)
       six ldap dns netaddr netifaces gssapi pyasn1 cffi lxml pki dbus-python
-      cryptography memcached lesscpy qrcode pyusb;
+      cryptography memcached lesscpy qrcode pyusb yubico;
     pyhbac = sssd;
     nss-python = python27Packages.nss;
     dirsrv = pkgs."389-ds-base";
