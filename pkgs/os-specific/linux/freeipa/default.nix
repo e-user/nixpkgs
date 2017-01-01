@@ -3,7 +3,7 @@
   dirsrv, svrcore, libuuid, talloc, tevent, samba, libunistring, libverto,
   systemd, python2, six, ldap, dns, netaddr, netifaces, gssapi, nss-python,
   pyasn1, pyhbac, cffi, lxml, pki, dbus-python, cryptography, memcached, qrcode,
-  jre, rhino, lesscpy, bind, pythonPackages }:
+  pyusb, jre, rhino, lesscpy, bind, pythonPackages }:
 
 let
   name = "freeipa-${version}";
@@ -26,7 +26,7 @@ stdenv.mkDerivation rec {
 
   pythonInputs = [
     six ldap dns netaddr netifaces gssapi nss-python pyasn1 pyhbac cffi lxml pki
-    dbus-python cryptography memcached qrcode
+    dbus-python cryptography memcached qrcode pyusb
   ];
 
   buildInputs = [
