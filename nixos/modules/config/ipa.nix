@@ -225,5 +225,10 @@ in {
 
     services.ntp.servers = singleton cfg.server;
     security.pki.certificateFiles = singleton certificate;
+    networking = {
+      search = singleton cfg.domain;
+      nameservers = singleton cfg.server;
+    };
+    
   };
 }
