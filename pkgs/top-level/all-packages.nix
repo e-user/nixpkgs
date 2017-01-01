@@ -7288,10 +7288,6 @@ in
     gss = krb5Full;
   };
 
-  freeipaBind = bind.override {
-    enableGSS = true;
-  };
-    
   freeipa = callPackage ../os-specific/linux/freeipa {
     kerberos = krb5Full;
     sasl = cyrus_sasl;
@@ -7304,7 +7300,6 @@ in
     nss-python = python27Packages.nss;
     dirsrv = pkgs."389-ds-base";
     samba = samba4.override { enableLDAP = true; };
-    bind = freeipaBind;
   };
 
   freetts = callPackage ../development/libraries/freetts { };
