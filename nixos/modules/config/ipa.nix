@@ -113,7 +113,7 @@ in {
       }
     ];
 
-    environment.systemPackages = with pkgs; [ freeipa krb5Full freeipaCurl bind openldap ];
+    environment.systemPackages = with pkgs; [ freeipa krb5Full freeipaCurl bind.dnsutils openldap ];
 
     environment.etc = mkMerge [{
       "ipa/default.conf".text = ''

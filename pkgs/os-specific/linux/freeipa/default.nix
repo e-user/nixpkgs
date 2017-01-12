@@ -71,7 +71,7 @@ stdenv.mkDerivation rec {
     cp -r ipaplatform/{fedora,nixos}
     substitute ${pathsPy} ipaplatform/nixos/paths.py \
       --subst-var out \
-      --subst-var-by bind ${bind.bin} \
+      --subst-var-by bind ${bind.dnsutils} \
       --subst-var-by curl ${curl} \
       --subst-var-by kerberos ${kerberos}
   '';
