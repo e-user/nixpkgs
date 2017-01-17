@@ -7394,6 +7394,8 @@ in
     gccCross = null;
   };
 
+  nscd = callPackage ../os-specific/linux/nscd { };
+
   glibc_memusage = callPackage ../development/libraries/glibc {
     installLocales = false;
     withGd = true;

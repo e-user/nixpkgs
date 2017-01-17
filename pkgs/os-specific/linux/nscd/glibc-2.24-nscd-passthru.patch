@@ -1,0 +1,234 @@
+diff -ur glibc-2.24-nscd-passthru/nscd/connections.c glibc-2.24/nscd/connections.c
+--- glibc-2.24-nscd-passthru/nscd/connections.c	2016-08-02 04:01:36.000000000 +0200
++++ glibc-2.24/nscd/connections.c	2017-01-17 17:01:27.329892853 +0100
+@@ -520,7 +520,7 @@
+     nthreads = 4;
+ 
+   for (size_t cnt = 0; cnt < lastdb; ++cnt)
+-    if (dbs[cnt].enabled)
++    if (dbs[cnt].enabled == cache_enabled)
+       {
+ 	pthread_rwlock_init (&dbs[cnt].lock, NULL);
+ 	pthread_mutex_init (&dbs[cnt].memlock, NULL);
+@@ -853,7 +853,7 @@
+     }
+ 
+ #ifdef HAVE_NETLINK
+-  if (dbs[hstdb].enabled)
++  if (dbs[hstdb].enabled != cache_disabled)
+     {
+       /* Try to open netlink socket to monitor network setting changes.  */
+       nl_status_fd = socket (AF_NETLINK,
+@@ -1022,7 +1022,7 @@
+       return;
+     }
+ 
+-  if (dbs[number].enabled)
++  if (dbs[number].enabled == cache_enabled)
+     {
+       pthread_mutex_lock (&dbs[number].prune_run_lock);
+       prune_cache (&dbs[number], LONG_MAX, fd);
+@@ -1135,7 +1135,8 @@
+   struct database_dyn *db = reqinfo[req->type].db;
+ 
+   /* See whether we can service the request from the cache.  */
+-  if (__builtin_expect (reqinfo[req->type].data_request, true))
++  if (__builtin_expect (reqinfo[req->type].data_request, true)
++      && db->enabled != cache_passthru)
+     {
+       if (__builtin_expect (debug_level, 0) > 0)
+ 	{
+@@ -1153,7 +1154,7 @@
+ 	}
+ 
+       /* Is this service enabled?  */
+-      if (__glibc_unlikely (!db->enabled))
++      if (__glibc_unlikely (db->enabled == cache_disabled))
+ 	{
+ 	  /* No, sent the prepared record.  */
+ 	  if (TEMP_FAILURE_RETRY (send (fd, db->disabled_iov->iov_base,
+@@ -1461,7 +1462,7 @@
+   /* Synchronize memory.  */
+   int32_t certainly[lastdb];
+   for (int cnt = 0; cnt < lastdb; ++cnt)
+-    if (dbs[cnt].enabled)
++    if (dbs[cnt].enabled == cache_enabled)
+       {
+ 	/* Make sure nobody keeps using the database.  */
+ 	dbs[cnt].head->timestamp = 0;
+@@ -1507,7 +1508,7 @@
+   /* Reenable the databases.  */
+   time_t now = time (NULL);
+   for (int cnt = 0; cnt < lastdb; ++cnt)
+-    if (dbs[cnt].enabled)
++    if (dbs[cnt].enabled == cache_enabled)
+       {
+ 	dbs[cnt].head->timestamp = now;
+ 	dbs[cnt].head->nscd_certainly_running = certainly[cnt];
+@@ -1545,7 +1546,7 @@
+ nscd_run_prune (void *p)
+ {
+   const long int my_number = (long int) p;
+-  assert (dbs[my_number].enabled);
++  assert (dbs[my_number].enabled == cache_enabled);
+ 
+   int dont_need_update = setup_thread (&dbs[my_number]);
+ 
+@@ -2479,7 +2480,7 @@
+ 	}
+ 
+       pthread_t th;
+-      if (dbs[i].enabled
++      if (dbs[i].enabled == cache_enabled
+ 	  && pthread_create (&th, &attr, nscd_run_prune, (void *) i) != 0)
+ 	{
+ 	  dbg_log (_("could not start clean-up thread; terminating"));
+diff -ur glibc-2.24-nscd-passthru/nscd/grpcache.c glibc-2.24/nscd/grpcache.c
+--- glibc-2.24-nscd-passthru/nscd/grpcache.c	2016-08-02 04:01:36.000000000 +0200
++++ glibc-2.24/nscd/grpcache.c	2017-01-17 17:02:20.606977799 +0100
+@@ -495,7 +495,10 @@
+ 	buffer = (char *) extend_alloca (buffer, buflen, 2 * buflen);
+     }
+ 
+-  time_t timeout = cache_addgr (db, fd, req, keystr, grp, uid, he, dh, errval);
++  time_t timeout = 0;
++
++  if (db->enabled != cache_passthru)
++    timeout = cache_addgr (db, fd, req, keystr, grp, uid, he, dh, errval);
+ 
+   if (use_malloc)
+     free (buffer);
+diff -ur glibc-2.24-nscd-passthru/nscd/hstcache.c glibc-2.24/nscd/hstcache.c
+--- glibc-2.24-nscd-passthru/nscd/hstcache.c	2016-08-02 04:01:36.000000000 +0200
++++ glibc-2.24/nscd/hstcache.c	2017-01-17 16:56:55.460509056 +0100
+@@ -521,8 +521,10 @@
+ 	buffer = (char *) extend_alloca (buffer, buflen, 2 * buflen);
+     }
+ 
+-  time_t timeout = cache_addhst (db, fd, req, key, hst, uid, he, dh,
+-				 h_errno == TRY_AGAIN ? errval : 0, ttl);
++  time_t timeout = 0;
++  if (db->enabled != cache_passthru)
++    timeout = cache_addhst (db, fd, req, key, hst, uid, he, dh,
++                            h_errno == TRY_AGAIN ? errval : 0, ttl);
+ 
+   if (use_malloc)
+     free (buffer);
+diff -ur glibc-2.24-nscd-passthru/nscd/netgroupcache.c glibc-2.24/nscd/netgroupcache.c
+--- glibc-2.24-nscd-passthru/nscd/netgroupcache.c	2016-08-02 04:01:36.000000000 +0200
++++ glibc-2.24/nscd/netgroupcache.c	2017-01-17 17:07:39.645479357 +0100
+@@ -442,7 +442,7 @@
+ 	}
+     }
+ 
+-  if (cacheable)
++  if (cacheable && db->enabled != cache_passthru)
+     {
+       /* If necessary, we also propagate the data to disk.  */
+       if (db->persistent)
+@@ -624,7 +624,7 @@
+ 	}
+     }
+ 
+-  if (cacheable)
++  if (cacheable && db->enabled != cache_passthru)
+     {
+       /* If necessary, we also propagate the data to disk.  */
+       if (db->persistent)
+diff -ur glibc-2.24-nscd-passthru/nscd/nscd.c glibc-2.24/nscd/nscd.c
+--- glibc-2.24-nscd-passthru/nscd/nscd.c	2016-08-02 04:01:36.000000000 +0200
++++ glibc-2.24/nscd/nscd.c	2017-01-17 15:56:48.061334613 +0100
+@@ -557,7 +557,7 @@
+   /* Synchronize memory.  */
+   for (int cnt = 0; cnt < lastdb; ++cnt)
+     {
+-      if (!dbs[cnt].enabled || dbs[cnt].head == NULL)
++      if (dbs[cnt].enabled == cache_disabled || dbs[cnt].head == NULL)
+ 	continue;
+ 
+       /* Make sure nobody keeps using the database.  */
+diff -ur glibc-2.24-nscd-passthru/nscd/nscd.conf glibc-2.24/nscd/nscd.conf
+--- glibc-2.24-nscd-passthru/nscd/nscd.conf	2016-08-02 04:01:36.000000000 +0200
++++ glibc-2.24/nscd/nscd.conf	2017-01-17 15:25:03.003031896 +0100
+@@ -16,7 +16,7 @@
+ #	paranoia		<yes|no>
+ #	restart-interval	<time in seconds>
+ #
+-#       enable-cache		<service> <yes|no>
++#       enable-cache		<service> <yes|no|passthru>
+ #	positive-time-to-live	<service> <time in seconds>
+ #	negative-time-to-live   <service> <time in seconds>
+ #       suggested-size		<service> <prime number>
+diff -ur glibc-2.24-nscd-passthru/nscd/nscd_conf.c glibc-2.24/nscd/nscd_conf.c
+--- glibc-2.24-nscd-passthru/nscd/nscd_conf.c	2016-08-02 04:01:36.000000000 +0200
++++ glibc-2.24/nscd/nscd_conf.c	2017-01-17 15:55:47.110418895 +0100
+@@ -146,9 +146,11 @@
+ 	  if (idx >= 0)
+ 	    {
+ 	      if (strcmp (arg2, "no") == 0)
+-		dbs[idx].enabled = 0;
++		dbs[idx].enabled = cache_disabled;
+ 	      else if (strcmp (arg2, "yes") == 0)
+-		dbs[idx].enabled = 1;
++		dbs[idx].enabled = cache_enabled;
++	      else if (strcmp (arg2, "passthru") == 0)
++		dbs[idx].enabled = cache_passthru;
+ 	    }
+ 	}
+       else if (strcmp (entry, "check-files") == 0)
+diff -ur glibc-2.24-nscd-passthru/nscd/nscd.h glibc-2.24/nscd/nscd.h
+--- glibc-2.24-nscd-passthru/nscd/nscd.h	2016-08-02 04:01:36.000000000 +0200
++++ glibc-2.24/nscd/nscd.h	2017-01-17 15:55:58.223221692 +0100
+@@ -41,6 +41,13 @@
+   lastdb
+ } dbtype;
+ 
++/* Activation types.  */
++typedef enum
++{
++  cache_disabled,
++  cache_enabled,
++  cache_passthru
++} cache_enable_t;
+ 
+ /* Default limit on the number of times a value gets reloaded without
+    being used in the meantime.  NSCD does not throw a value out as
+@@ -132,7 +139,7 @@
+   pthread_mutex_t prune_run_lock;
+   time_t wakeup_time;
+ 
+-  int enabled;
++  cache_enable_t enabled;
+   int check_file;
+   int clear_cache;
+   int persistent;
+diff -ur glibc-2.24-nscd-passthru/nscd/pwdcache.c glibc-2.24/nscd/pwdcache.c
+--- glibc-2.24-nscd-passthru/nscd/pwdcache.c	2016-08-02 04:01:36.000000000 +0200
++++ glibc-2.24/nscd/pwdcache.c	2017-01-17 17:03:02.070263556 +0100
+@@ -474,8 +474,10 @@
+     }
+ 
+   /* Add the entry to the cache.  */
+-  time_t timeout = cache_addpw (db, fd, req, keystr, pwd, c_uid, he, dh,
+-				errval);
++  time_t timeout = 0;
++  if (db->enabled != cache_passthru)
++    timeout = cache_addpw (db, fd, req, keystr, pwd, c_uid, he, dh,
++                           errval);
+ 
+   if (use_malloc)
+     free (buffer);
+diff -ur glibc-2.24-nscd-passthru/nscd/servicescache.c glibc-2.24/nscd/servicescache.c
+--- glibc-2.24-nscd-passthru/nscd/servicescache.c	2016-08-02 04:01:36.000000000 +0200
++++ glibc-2.24/nscd/servicescache.c	2017-01-17 17:03:53.144381354 +0100
+@@ -421,7 +421,9 @@
+ 	buffer = (char *) extend_alloca (buffer, buflen, 2 * buflen);
+     }
+ 
+-  time_t timeout = cache_addserv (db, fd, req, key, serv, uid, he, dh, errval);
++  time_t timeout = 0;
++  if (db->enabled != cache_passthru)
++    timeout = cache_addserv (db, fd, req, key, serv, uid, he, dh, errval);
+ 
+   if (use_malloc)
+     free (buffer);
