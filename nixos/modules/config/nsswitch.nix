@@ -11,8 +11,6 @@ let
   ldap = (config.users.ldap.enable && config.users.ldap.nsswitch);
   sssd = config.services.sssd.enable;
 
-in
-
   passwdArray = [ "files" ]
     ++ optional sssd "sss"
     ++ optionals ldap [ "ldap" ]
@@ -30,8 +28,9 @@ in
 
   sudoArray = [ "files" ]
     ++ optional sssd "sss";
-    
+
 in {
+  
   options = {
 
     # NSS modules.  Hacky!
