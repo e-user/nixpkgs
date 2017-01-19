@@ -17,9 +17,6 @@ let
     BASE ${cfg.basedn}
     TLS_CACERT /etc/ipa/ca.crt  
   '';
-  certificate = pkgs.runCommand "ca.crt" { buildInputs = [ pkgs.freeipaCurl ]; } ''
-    ${pkgs.freeipaCurl}/bin/curl -k ${cfg.server}/ipa/config/ca.crt > $out
-  '';
   nssDb = pkgs.runCommand "ipa-nssdb" { buildInputs = [ pkgs.nss.tools ]; } ''
     set -x
     mkdir -p $out
@@ -27,12 +24,23 @@ let
     chmod 600 $out/pwdfile.txt
     certutil -d $out -N -f $out/pwdfile.txt
     chmod 644 $out/*.db
-    certutil -d $out -A -f $out/pwdfile -n "${cfg.realm} IPA CA" -t CT,C,C -i ${certificate}
+    certutil -d $out -A -f $out/pwdfile -n "${cfg.realm} IPA CA" -t CT,C,C -i ${cfg.certificate}
   '';
+
 in {
   options = {
     ipa = {
       enable = mkEnableOption "FreeIPA domain integration";
+
+      certificate = mkOption {
+        type = types.package;
+        description = ''
+          IPA server CA certificate.
+
+          Use `nix-prefetch-url http://$server/ipa/config/ca.crt` to
+          obtain the file and the hash.
+        '';
+      };
 
       domain = mkOption {
         type = types.str;
@@ -169,9 +177,9 @@ in {
     
     system.activationScripts.ipa = stringAfter [ "etc" ] ''
       # libcurl requires a hard copy of the certificate
-      if ! ${pkgs.diffutils}/bin/diff ${certificate} /etc/ipa/ca.crt > /dev/null; then
+      if ! ${pkgs.diffutils}/bin/diff ${cfg.certificate} /etc/ipa/ca.crt > /dev/null; then
         rm -f /etc/ipa/ca.crt
-        cp ${certificate} /etc/ipa/ca.crt
+        cp ${cfg.certificate} /etc/ipa/ca.crt
       fi
 
       # Perform ipa-join after all files in /etc are available
@@ -224,7 +232,7 @@ in {
     '';
 
     services.ntp.servers = singleton cfg.server;
-    security.pki.certificateFiles = singleton certificate;
+    security.pki.certificateFiles = singleton cfg.certificate;
     
   };
 }
