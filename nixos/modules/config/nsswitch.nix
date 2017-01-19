@@ -11,6 +11,13 @@ let
   ldap = (config.users.ldap.enable && config.users.ldap.nsswitch);
   sssd = config.services.sssd.enable;
 
+  hostArray = [ "files" "mymachines" ]
+    ++ optionals nssmdns [ "mdns_minimal [!UNAVAIL=return]" ]
+    ++ optionals nsswins [ "wins" ]
+    ++ [ "dns" ]
+    ++ optionals nssmdns [ "mdns" ]
+    ++ ["myhostname" ];
+  
   passwdArray = [ "files" ]
     ++ optional sssd "sss"
     ++ optionals ldap [ "ldap" ]
