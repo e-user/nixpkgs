@@ -67,7 +67,7 @@ in
         ];
 
         serviceConfig =
-          { ExecStart = "@${pkgs.nscd}/sbin/nscd nscd -f ${cfgFile}";
+          { ExecStart = "@${pkgs.nscd}/sbin/nscd nscd";
             Type = "forking";
             PIDFile = "/run/nscd/nscd.pid";
             Restart = "always";
@@ -82,7 +82,7 @@ in
         # its pid. So wait until it's ready.
         postStart =
           ''
-            while ! ${pkgs.nscd}/sbin/nscd -g -f ${cfgFile} > /dev/null; do
+            while ! ${pkgs.nscd}/sbin/nscd -g > /dev/null; do
               sleep 0.2
             done
           '';
