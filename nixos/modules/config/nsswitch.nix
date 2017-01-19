@@ -25,6 +25,12 @@ in
   servicesArray = [ "files" ]
     ++ optional sssd "sss";
 
+  netgroupArray = [ "files" ]
+    ++ optional sssd "sss";
+
+  sudoArray = [ "files" ]
+    ++ optional sssd "sss";
+    
 in {
   options = {
 
@@ -59,11 +65,14 @@ in {
 
       hosts:     ${concatStringsSep " " hostArray}
       networks:  files
-
+      netgroup:  ${concatStringsSep " " netgroupArray}
+      
       ethers:    files
       services:  ${concatStringsSep " " servicesArray}
       protocols: files
       rpc:       files
+
+      sudo:      ${concatStringsSep " " sudoArray}
     '';
 
     # Systemd provides nss-myhostname to ensure that our hostname
