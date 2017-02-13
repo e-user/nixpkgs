@@ -22,7 +22,7 @@ stdenv.mkDerivation rec {
   };
 
   configureFlags = [ "--with-tcl=no" ]
-    ++ optional withSystemVerto ? "--with-system-verto"
+    ++ optional withSystemVerto "--with-system-verto"
     ++ optional stdenv.isFreeBSD ''WARN_CFLAGS=""'';
 
   nativeBuildInputs = [ pkgconfig perl yacc ]
