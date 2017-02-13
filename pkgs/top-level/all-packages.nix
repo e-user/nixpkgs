@@ -7252,12 +7252,14 @@ with pkgs;
 
   freeipaKerberos = krb5Full.override { inherit libverto; };
 
+  freeipaKerberosLib = freeipaKerberos.override { type = "lib"; };
+
   freeipaCurl = curl.override {
     gssSupport = true;
     gss = krb5Full;
   };
 
-  freeipaBind = bind.override { enableGSS = true; };
+  freeipaBind = bind.override { libkrb5 = freeipaKerberosLib; };
 
   freeipaSamba = samba4.override { enableLDAP = true; };
           
