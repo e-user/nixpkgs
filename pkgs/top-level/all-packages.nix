@@ -7259,7 +7259,7 @@ with pkgs;
     gss = krb5Full;
   };
 
-  freeipaBind = bind.override { libkrb5 = freeipaKerberosLib; };
+  freeipaBind = bind.override { kerberos = freeipaKerberosLib; };
 
   freeipaSamba = samba4.override {
     enableLDAP = true;
