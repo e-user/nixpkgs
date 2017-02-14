@@ -7261,7 +7261,10 @@ with pkgs;
 
   freeipaBind = bind.override { libkrb5 = freeipaKerberosLib; };
 
-  freeipaSamba = samba4.override { enableLDAP = true; };
+  freeipaSamba = samba4.override {
+    enableLDAP = true;
+    kerberos = freeipaKerberosLib;
+  };
           
   freeipa = callPackage ../os-specific/linux/freeipa {
     kerberos = freeipaKerberos;
